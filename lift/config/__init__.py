@@ -1,0 +1,15 @@
+# ============================================================================
+# PATH: isaaclab/source/isaaclab_tasks/isaaclab_tasks/manager_based/manipulation/lift/config/__init__.py
+# ============================================================================
+# NOTE: This is parent __init__.py - Add "so100" to imports if not present
+
+# Copyright (c) 2022-2025, The Isaac Lab Project Developers (https://github.com/isaac-sim/IsaacLab/blob/main/CONTRIBUTORS.md).
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+"""Configurations for the object lift environments."""
+
+# We leave this file empty since we don't want to expose any configs in this package directly.
+# We still need this file to import the "config" module in the parent package.
+from . import franka, so100
