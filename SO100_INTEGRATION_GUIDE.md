@@ -39,6 +39,9 @@ If you're working on:
 - ✅ **IL-Ready** - Configured for Behavior Cloning and RL training
 - ✅ **Troubleshooting Guide** - Common errors and solutions included
 - ✅ **Beginner Friendly** - No prior Isaac Lab experience needed
+- ✅ **Vision-Based Learning** - Wrist camera (RGB+Depth 640x480) with auto-enable
+- ✅ **Domain Randomization** - Lighting & material randomization for sim-to-real
+- ✅ **Incremental Gripper** - Smooth continuous control (Z/X keys)
 
 ---
 
@@ -65,7 +68,7 @@ Robot with independent joint control (each key controls ONE joint only).
 
 ```bash
 ./isaaclab.sh -p scripts/environments/teleoperation/teleop_joint_agent.py \
-    --task Isaac-Lift-Cube-SO100-v0 --joint_delta 0.1
+    --task Isaac-Lift-Cube-SO100-v0 --joint_delta 0.01 # Camera auto-enabled
 ```
 
 **IK Control Keyboard (teleop_se3_agent.py):**

@@ -1,7 +1,3 @@
-# ============================================================================
-# PATH: isaaclab/scripts/environments/teleoperation/teleop_joint_agent.py
-# ============================================================================
-
 # Copyright (c) 2022-2025, The Isaac Lab Project Developers.
 # All rights reserved.
 #
@@ -17,9 +13,9 @@ JOINT MAPPINGS (Change in advance() method, ~Line 95-180):
 delta[0] = Shoulder Pan   → Keys: Q (left) / A (right)
 delta[1] = Shoulder Lift  → Keys: W (up) / S (down)
 delta[2] = Elbow Flex     → Keys: E (extend) / D (retract)
-delta[3] = Wrist Flex     → Keys: C (up) / V (down)
+delta[3] = Wrist Flex     → Keys: R (up) / V (down)
 delta[4] = Wrist Roll     → Keys: T (rotate+) / G (rotate-)
-delta[5] = Gripper        → Keys: Z (open) / X (close) - INCREMENTAL!
+delta[5] = Gripper        → Keys: Z (open) / X (close)
 
 SPECIAL KEYS:
 -------------
@@ -39,7 +35,7 @@ USAGE:
 ------
 ./isaaclab.sh -p scripts/environments/teleoperation/teleop_joint_agent.py \\
     --task Isaac-Lift-Cube-SO100-v0 \\
-    --joint_delta 0.01
+    --joint_delta 0.1
 
 """
 
@@ -57,6 +53,9 @@ parser.add_argument("--joint_delta", type=float, default=0.1, help="Joint moveme
 AppLauncher.add_app_launcher_args(parser)
 # parse the arguments
 args_cli = parser.parse_args()
+
+# Force enable cameras (permanent)
+args_cli.enable_cameras = True
 
 # launch omniverse app
 app_launcher = AppLauncher(args_cli)
@@ -103,7 +102,7 @@ class JointKeyboardController:
             2: 0.25,  # Elbow Flex - slower for precision
             3: 0.25,  # Wrist Flex - even slower (fine control)
             4: 0.25,  # Wrist Roll - even slower (fine control)
-            5: 0.25,  # Gripper - incremental control (jitna press utna move)
+            5: 0.25,  # Gripper - faster (gripper needs quick open/close)
         }
         
         # Keyboard interface
@@ -122,9 +121,9 @@ class JointKeyboardController:
         print("  Q/A - Shoulder Pan (base rotation)")
         print("  W/S - Shoulder Lift (arm up/down)")
         print("  E/D - Elbow Flex (extend/retract)")
-        print("  C/V - Wrist Flex (wrist up/down)")
+        print("  C/V - Wrist Flex (wrist up/down)")  # Changed from R/V to C/V
         print("  T/G - Wrist Roll (wrist rotation)")
-        print("  Z/X - Gripper (open/close) - INCREMENTAL!")
+        print("  Z/X - Gripper (open/close)")
         print("\nOther:")
         print("  BACKSPACE - Reset environment")
         print("  F & SPACE - Blocked (camera reset & pause prevention)")
@@ -164,15 +163,15 @@ class JointKeyboardController:
             delta[2] = Elbow Flex (forearm extend/retract)
             delta[3] = Wrist Flex (wrist up/down)
             delta[4] = Wrist Roll (wrist rotation)
-            delta[5] = Gripper (open/close) - INCREMENTAL!
+            delta[5] = Gripper (open/close)
         
         Key Mappings (Change keys here if needed):
             Q/A = Shoulder Pan (delta[0])
             W/S = Shoulder Lift (delta[1])
             E/D = Elbow Flex (delta[2])
-            C/V = Wrist Flex (delta[3])
+            R/V = Wrist Flex (delta[3])
             T/G = Wrist Roll (delta[4])
-            Z/X = Gripper (delta[5]) - INCREMENTAL CONTROL!
+            Z/X = Gripper (delta[5])
         
         Special Keys:
             BACKSPACE = Reset environment (see line ~202)
@@ -211,6 +210,7 @@ class JointKeyboardController:
         # ============================================================
         # JOINT 3: Wrist Flex (wrist up/down)
         # Keys: C (positive) / V (negative)
+        # Changed from R/V to C/V for user preference
         # ============================================================
         if self._key_state.get("C", False):
             delta[3] = self.joint_delta * self.joint_sensitivity[3]
@@ -227,9 +227,8 @@ class JointKeyboardController:
             delta[4] = -self.joint_delta * self.joint_sensitivity[4]
         
         # ============================================================
-        # JOINT 5: Gripper (open/close) - INCREMENTAL CONTROL!
+        # JOINT 5: Gripper (open/close)
         # Keys: Z (positive/open) / X (negative/close)
-        # Jitna press karo utna hi move hoga (not binary)
         # ============================================================
         if self._key_state.get("Z", False):
             delta[5] = self.joint_delta * self.joint_sensitivity[5]  # Open
