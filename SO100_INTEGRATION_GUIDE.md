@@ -39,7 +39,7 @@ If you're working on:
 - ✅ **IL-Ready** - Configured for Behavior Cloning and RL training
 - ✅ **Troubleshooting Guide** - Common errors and solutions included
 - ✅ **Beginner Friendly** - No prior Isaac Lab experience needed
-- ✅ **Vision-Based Learning** - Wrist camera (RGB+Depth 640x480) with auto-enable
+- ✅ **Vision-Based Learning** - Wrist camera (RGB+Depth 640x480) at optimized angle (X=-53°, Y=5°, Z=185°), auto-enabled
 - ✅ **Domain Randomization** - Lighting & material randomization for sim-to-real
 - ✅ **Incremental Gripper** - Smooth continuous control (Z/X keys)
 
@@ -1744,10 +1744,20 @@ After BC pre-training, improve with Reinforcement Learning:
 - Collect real-world data for fine-tuning
 
 #### 4. Vision-Based Control
-- Add camera sensor to robot
-- Use RGB/depth images as input instead of state
-- Train end-to-end visuomotor policies
 
+**Wrist Camera Configuration:**
+- **Mount Location:** Stable wrist link (unaffected by gripper T/G rotation)
+- **Resolution:** 640x480 RGB + Depth
+- **Position:** (0.0, 0.1, 0.2) - 10cm sideways, 20cm forward from wrist
+- **Orientation:** X=-53°, Y=5°, Z=185° (optimized for workspace view)
+- **Quaternion:** (-0.019555, 0.058444, 0.443646, 0.894081)
+- **Update Rate:** 0.1s (10Hz)
+- **Auto-Enabled:** No --enable_cameras flag needed
+
+**Usage:**
+- RGB images for vision-based policies
+- Depth data for 3D spatial reasoning
+- Suitable for end-to-end visuomotor training
 ---
 
 ### 📝 KNOWN LIMITATIONS & WORKAROUNDS
