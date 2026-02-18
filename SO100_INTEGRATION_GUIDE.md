@@ -39,7 +39,8 @@ If you're working on:
 - ✅ **IL-Ready** - Configured for Behavior Cloning and RL training
 - ✅ **Troubleshooting Guide** - Common errors and solutions included
 - ✅ **Beginner Friendly** - No prior Isaac Lab experience needed
-- ✅ **Vision-Based Learning** - Wrist camera (RGB+Depth 640x480) at optimized angle (X=-53°, Y=5°, Z=185°), auto-enabled
+- ✅ **Vision-Based Learning** - Wrist camera defined in USD file, gripper-mounted, top-down view of cube and jaws, auto-enabled
+- ✅ **Leader Arm Teleoperation** - Physical SO-100 leader arm mirrored into sim via pyserial (Feetech STS, `/dev/ttyACM0`)
 - ✅ **Domain Randomization** - Lighting & material randomization for sim-to-real
 - ✅ **Incremental Gripper** - Smooth continuous control (Z/X keys)
 
@@ -70,6 +71,16 @@ Robot with independent joint control (each key controls ONE joint only).
 ./isaaclab.sh -p scripts/environments/teleoperation/teleop_joint_agent.py \
     --task Isaac-Lift-Cube-SO100-v0 --joint_delta 0.01 # Camera auto-enabled
 ```
+
+### Leader Arm Teleoperation (Physical SO-100) ⭐ NEW!
+Mirror a real SO-100 leader arm into the simulation in real-time.
+
+```bash
+./isaaclab.sh -p scripts/environments/teleoperation/teleop_so100_leader.py \
+    --task Isaac-Lift-Cube-SO100-v0
+```
+
+**Requirements**: Physical SO-100 arm connected via USB (`/dev/ttyACM0`), pyserial installed.
 
 **IK Control Keyboard (teleop_se3_agent.py):**
 - `W/S/A/D/Q/E` - Move end-effector (position)
@@ -188,7 +199,9 @@ Jump to [Step 1: Create Robot Asset Configuration](#step-1-create-so-100-robot-a
 | Robot Asset Config | ✅ Working | High stiffness for fast movement |
 | Reach Task | ✅ Working | IK control with keyboard |
 | Lift Task | ✅ Working | Collision detection enabled |
-| Teleoperation | ✅ Working | WASD + gripper controls |
+| Keyboard Teleoperation | ✅ Working | WASD + gripper controls |
+| Leader Arm Teleoperation | ✅ Working | Physical SO-100 via pyserial `/dev/ttyACM0` |
+| Wrist Camera (USD) | ✅ Working | Top-down gripper view, defined in USD file |
 | IL Data Collection | 🔲 TODO | Recording pipeline in progress |
 | Trained BC Model | 🔲 TODO | Training after data collection |
 
@@ -1919,6 +1932,19 @@ print(isaaclab_assets.__file__)  # Shows actual import path
 ---
 
 ## VERSION HISTORY
+
+**v1.3 - February 18, 2026 (Milan Jani)**
+- ✅ **Added Physical Leader Arm Teleoperation** (`teleop_so100_leader.py`)
+  - Mirrors real SO-100 leader arm joints into Isaac Lab sim in real-time
+  - Pure pyserial implementation — no external SDK required
+  - Feetech STS raw serial protocol (0xFF 0xFF header, register 56, 1 Mbaud)
+  - Confirmed working on `/dev/ttyACM0` (QinHeng CH343 USB chip)
+  - Calibration step: home position captured at startup
+- ✅ **Moved Camera Config to USD File**
+  - Camera defined directly in USD on gripper link (cleaner Python)
+  - Position: `(-0.18599, -0.00463, -0.05317)`, Euler: `(-88°, -72°, 91°)`
+  - Focal Length 14.0 — top-down view showing cube and gripper jaws
+  - Python `CameraCfg` block commented out in `joint_pos_env_cfg.py`
 
 **v1.0 - January 24, 2026 (Milan Jani)**
 - Initial integration of SO-100 reach task
