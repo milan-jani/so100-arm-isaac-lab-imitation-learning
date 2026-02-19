@@ -9,7 +9,7 @@
 
 import isaaclab.sim as sim_utils  # Added for collision_props
 from isaaclab.assets import RigidObjectCfg
-from isaaclab.sensors import CameraCfg, FrameTransformerCfg
+from isaaclab.sensors import FrameTransformerCfg
 from isaaclab.sensors.frame_transformer.frame_transformer_cfg import OffsetCfg
 from isaaclab.sim.schemas.schemas_cfg import RigidBodyPropertiesCfg
 from isaaclab.sim.spawners.from_files.from_files_cfg import UsdFileCfg
@@ -113,25 +113,27 @@ class SO100CubeLiftEnvCfg(LiftEnvCfg):
                 ),
             ],
         )
-        # Add wrist camera for vision-based policy
-        self.scene.wrist_camera = CameraCfg(
-            prim_path="{ENV_REGEX_NS}/Robot/jaw/Camera",
-            update_period=0.1,
-            height=480,
-            width=640,
-            data_types=["rgb", "distance_to_image_plane"],
-            spawn=sim_utils.PinholeCameraCfg(
-                focal_length=24.0, 
-                focus_distance=400.0, 
-                horizontal_aperture=20.955, 
-                clipping_range=(0.1, 1.0e5)
-            ),
-            offset=CameraCfg.OffsetCfg(
-                pos = (0.1349, -0.0068, -0.03398),
-                rot=(0.685785, 0.243710, 0.685785, 0.001865),
-                convention="world"
-            ),
-        )
+        # =====================================================================
+        # CAMERA IS DEFINED DIRECTLY IN THE USD FILE — not configured here.
+        # =====================================================================
+        # self.scene.wrist_camera = CameraCfg(
+        #     prim_path="{ENV_REGEX_NS}/Robot/gripper/Camera",
+        #     update_period=0.1,
+        #     height=480,
+        #     width=640,
+        #     data_types=["rgb", "distance_to_image_plane"],
+        #     spawn=sim_utils.PinholeCameraCfg(
+        #         focal_length=14.0,
+        #         focus_distance=400.0,
+        #         horizontal_aperture=20.955,
+        #         clipping_range=(0.1, 1.0e5),
+        #     ),
+        #     offset=CameraCfg.OffsetCfg(
+        #         pos=(-0.18599, -0.00463, -0.05317),
+        #         rot=...,  # X=-88.002°, Y=-72.0°, Z=90.998°
+        #         convention="world",
+        #     ),
+        # )
 
         # Reduce cube spawn randomization range for SO-100's smaller reach
         # These values are OFFSETS added to initial position [0.4, 0.0, 0.055]

@@ -34,15 +34,15 @@ If you're working on:
 - ✅ **Complete Integration Pipeline** - From zero to working robot in Isaac Lab
 - ✅ **Two Task Environments** - Reach (position control) & Lift (object manipulation)
 - ✅ **Keyboard Teleoperation** - WASD controls for easy demonstration collection
+- ✅ **Physical Leader Arm Teleoperation** - Real SO-100 arm mirrors simulation in real time
+- ✅ **Auto-Calibration** - Timed range + dedicated gripper 2-point calibration at startup
+- ✅ **Zero-Diff Position Tracking** - Physics offset correction for exact 1:1 joint mapping
+- ✅ **USB Serial Resilience** - Survives disconnects, holds last position, auto-recovers
 - ✅ **Collision Detection Setup** - Step-by-step USD collision mesh configuration
 - ✅ **Performance Tuning** - Optimized stiffness/damping for fast, stable control
 - ✅ **IL-Ready** - Configured for Behavior Cloning and RL training
 - ✅ **Troubleshooting Guide** - Common errors and solutions included
 - ✅ **Beginner Friendly** - No prior Isaac Lab experience needed
-- ✅ **Vision-Based Learning** - Wrist camera defined in USD file, gripper-mounted, top-down view of cube and jaws, auto-enabled
-- ✅ **Leader Arm Teleoperation** - Physical SO-100 leader arm mirrored into sim via pyserial (Feetech STS, `/dev/ttyACM0`)
-- ✅ **Domain Randomization** - Lighting & material randomization for sim-to-real
-- ✅ **Incremental Gripper** - Smooth continuous control (Z/X keys)
 
 ---
 
@@ -64,23 +64,50 @@ Robot picks up and manipulates cube with IK control (multiple joints move togeth
     --task Isaac-Lift-Cube-SO100-IK-Abs-v0 --teleop_device keyboard
 ```
 
-### Lift Task (Joint Control - Independent Movement) ⭐ NEW!
+### Lift Task (Joint Control - Independent Movement) ⭐
 Robot with independent joint control (each key controls ONE joint only).
 
 ```bash
 ./isaaclab.sh -p scripts/environments/teleoperation/teleop_joint_agent.py \
-    --task Isaac-Lift-Cube-SO100-v0 --joint_delta 0.01 # Camera auto-enabled
+    --task Isaac-Lift-Cube-SO100-v0 --joint_delta 0.1
 ```
 
-### Leader Arm Teleoperation (Physical SO-100) ⭐ NEW!
-Mirror a real SO-100 leader arm into the simulation in real-time.
+### Leader Arm Teleoperation ⭐ NEW (Feb 2026)
+Physically move the real SO-100 leader arm — simulation arm mirrors every joint in real time.
 
 ```bash
-./isaaclab.sh -p scripts/environments/teleoperation/teleop_so100_leader.py \
-    --task Isaac-Lift-Cube-SO100-v0
+# Quick run using alias (add to ~/.bash_aliases first):
+teleop_so100
+
+# Or directly:
+cd ~/IsaacLab && ./isaaclab.sh -p scripts/environments/teleoperation/teleop_so100_leader.py \
+    --task Isaac-Lift-Cube-SO100-v0 --port /dev/ttyACM0
 ```
 
-**Requirements**: Physical SO-100 arm connected via USB (`/dev/ttyACM0`), pyserial installed.
+**Startup sequence:**
+1. Connect SO-100 leader arm via USB (`/dev/ttyACM0` default)
+2. Environment loads and physics warms up (30 steps)
+3. **8-second calibration** — move ALL arm joints through full range
+4. **Gripper calibration skipped** — saved values used automatically (`GRIPPER_RAW_CLOSED=2027`, `GRIPPER_RAW_OPEN=3172`)
+5. Sim arm snaps to leader arm position — teleoperation begins
+
+**Real-time terminal display (updates every 10 steps):**
+```
+  Step   340  |    Raw |   Norm | Leader(rad)  |   Sim(rad) |     Diff
+  ──────────────────────────────────────────────────────────────────────
+  Shoulder Pan  |  1986 | -0.061 |     -0.1211  |    -0.1211 |  +0.0000
+  Shoulder Lift |   948 | -1.000 |     +0.0000  |    +0.0000 |  +0.0000
+  Elbow Flex    |  3021 | +0.950 |     -0.0782  |    -0.0782 |  +0.0000
+  Wrist Flex    |  2245 | +0.192 |     -0.2941  |    -0.2941 |  +0.0000
+  Wrist Roll    |  1025 | -0.999 |     -3.1385  |    -3.1385 |  +0.0000
+  Gripper/Jaw   |  2027 | -0.021 |     +0.8774  |    +0.8774 |  +0.0000
+  BACKSPACE = reset  |  Ctrl+C = quit
+```
+
+**Controls:**
+- Move physical arm → sim arm mirrors exactly
+- `BACKSPACE` in Isaac Sim window → reset environment + re-snap to leader position
+- `Ctrl+C` in terminal → quit
 
 **IK Control Keyboard (teleop_se3_agent.py):**
 - `W/S/A/D/Q/E` - Move end-effector (position)
@@ -163,10 +190,19 @@ Jump to [Step 1: Create Robot Asset Configuration](#step-1-create-so-100-robot-a
 14. [Clear Python Cache](#step-14-clear-python-cache)
 15. [Test Lift Task](#step-15-test-lift-task-with-keyboard)
 
-### Part 4: Independent Joint Control ⭐ NEW
+### Part 4: Independent Joint Control
 16. [Create Joint Position Teleop Script](#step-16-create-independent-joint-control-script)
 17. [Understanding Control Modes](#step-17-ik-vs-joint-position-control)
 18. [Customizing Key Mappings](#step-18-customize-keyboard-mappings)
+
+### Part 5: Physical Leader Arm Teleoperation ⭐ NEW (Feb 2026)
+19. [Overview & Architecture](#step-19-leader-arm-teleoperation-overview)
+20. [Hardware Setup](#step-20-hardware-setup)
+21. [Calibration System](#step-21-calibration-system)
+22. [Position Mapping & Offset Fix](#step-22-position-mapping--offset-correction)
+23. [Response Time Tuning](#step-23-response-time-tuning)
+24. [Terminal Display & Debugging](#step-24-real-time-terminal-display)
+25. [Alias Setup](#step-25-shell-alias-setup)
 
 ### Additional Sections
 - [Keyboard Controls](#keyboard-controls-same-as-reach)
@@ -199,9 +235,10 @@ Jump to [Step 1: Create Robot Asset Configuration](#step-1-create-so-100-robot-a
 | Robot Asset Config | ✅ Working | High stiffness for fast movement |
 | Reach Task | ✅ Working | IK control with keyboard |
 | Lift Task | ✅ Working | Collision detection enabled |
-| Keyboard Teleoperation | ✅ Working | WASD + gripper controls |
-| Leader Arm Teleoperation | ✅ Working | Physical SO-100 via pyserial `/dev/ttyACM0` |
-| Wrist Camera (USD) | ✅ Working | Top-down gripper view, defined in USD file |
+| Keyboard Teleoperation | ✅ Working | WASD + independent joint keys |
+| **Leader Arm Teleoperation** | ✅ **Working** | **Real arm → sim mirror, ~0 diff** |
+| **Gripper Calibration** | ✅ **Working** | **2-point saved calibration** |
+| **Serial Resilience** | ✅ **Working** | **USB disconnect survivable** |
 | IL Data Collection | 🔲 TODO | Recording pipeline in progress |
 | Trained BC Model | 🔲 TODO | Training after data collection |
 
@@ -224,7 +261,7 @@ This project is licensed under the BSD-3-Clause License - see Isaac Lab's licens
 ## 📧 Contact
 
 - **Author:** Milan Jani
-- **Date:** January 24, 2026
+- **Last Updated:** February 19, 2026
 - **GitHub:** [Your GitHub Profile]
 - **YouTube:** [Your YouTube Channel]
 
@@ -1757,20 +1794,10 @@ After BC pre-training, improve with Reinforcement Learning:
 - Collect real-world data for fine-tuning
 
 #### 4. Vision-Based Control
+- Add camera sensor to robot
+- Use RGB/depth images as input instead of state
+- Train end-to-end visuomotor policies
 
-**Wrist Camera Configuration:**
-- **Mount Location:** Stable wrist link (unaffected by gripper T/G rotation)
-- **Resolution:** 640x480 RGB + Depth
-- **Position:** (0.0, 0.1, 0.2) - 10cm sideways, 20cm forward from wrist
-- **Orientation:** X=-53°, Y=5°, Z=185° (optimized for workspace view)
-- **Quaternion:** (-0.019555, 0.058444, 0.443646, 0.894081)
-- **Update Rate:** 0.1s (10Hz)
-- **Auto-Enabled:** No --enable_cameras flag needed
-
-**Usage:**
-- RGB images for vision-based policies
-- Depth data for 3D spatial reasoning
-- Suitable for end-to-end visuomotor training
 ---
 
 ### 📝 KNOWN LIMITATIONS & WORKAROUNDS
@@ -1933,19 +1960,6 @@ print(isaaclab_assets.__file__)  # Shows actual import path
 
 ## VERSION HISTORY
 
-**v1.3 - February 18, 2026 (Milan Jani)**
-- ✅ **Added Physical Leader Arm Teleoperation** (`teleop_so100_leader.py`)
-  - Mirrors real SO-100 leader arm joints into Isaac Lab sim in real-time
-  - Pure pyserial implementation — no external SDK required
-  - Feetech STS raw serial protocol (0xFF 0xFF header, register 56, 1 Mbaud)
-  - Confirmed working on `/dev/ttyACM0` (QinHeng CH343 USB chip)
-  - Calibration step: home position captured at startup
-- ✅ **Moved Camera Config to USD File**
-  - Camera defined directly in USD on gripper link (cleaner Python)
-  - Position: `(-0.18599, -0.00463, -0.05317)`, Euler: `(-88°, -72°, 91°)`
-  - Focal Length 14.0 — top-down view showing cube and gripper jaws
-  - Python `CameraCfg` block commented out in `joint_pos_env_cfg.py`
-
 **v1.0 - January 24, 2026 (Milan Jani)**
 - Initial integration of SO-100 reach task
 - Added lift task with cube manipulation
@@ -1959,6 +1973,219 @@ print(isaaclab_assets.__file__)  # Shows actual import path
 - ✅ Reduced cube spawn range for reliable reaching
 - ✅ Updated gripper opening range (0.08 max)
 - ✅ Fixed file structure confusion (2 so100.py files issue)
+
+**v1.2 - February 19, 2026 (Milan Jani)**
+- ✅ Added `teleop_so100_leader.py` — physical leader arm mirrors simulation
+- ✅ Raw pyserial protocol (no scservo_sdk dependency)
+- ✅ Auto-range calibration: 8-second timed sweep per joint
+- ✅ Dedicated 2-point gripper calibration with saved values
+- ✅ Fixed position offset: subtracted `default_joint_pos` to cancel `use_default_offset=True`
+- ✅ Per-joint deadband `[4,4,4,4,4,1]` — gripper near-instant
+- ✅ EMA smoothing replaced with deadband-only (zero lag)
+- ✅ Serial disconnect resilience: holds last position, warns, keeps running
+- ✅ Real-time side-by-side terminal table (leader vs sim, no scroll)
+- ✅ Backspace keyboard handler via `carb`/`omni.appwindow`
+- ✅ Shell alias `teleop_so100` added to `~/.bash_aliases`
+- ✅ SERIAL_TIMEOUT reduced to 1ms, INTER_READ_SLEEP to 0.5ms
+
+---
+
+## PART 5: PHYSICAL LEADER ARM TELEOPERATION
+
+---
+
+## STEP 19: LEADER ARM TELEOPERATION OVERVIEW
+
+### What it does
+`teleop_so100_leader.py` reads joint positions from a physical SO-100 leader arm via USB serial and sends them directly to the Isaac Lab simulation. Every joint in the simulation mirrors the physical arm in real time with near-zero difference.
+
+### Architecture
+```
+Physical SO-100 Leader Arm
+        │
+        │  USB (Feetech STS3215 servo bus @ 1Mbaud)
+        │
+  SO100LeaderController
+    ├─ _read_raw_positions()   ← raw 0-4095 encoder counts
+    ├─ deadband filter          ← ignore noise < DEADBAND_COUNTS per joint
+    ├─ normalize [-1, +1]       ← using calibrated raw_center + raw_half
+    └─ map to sim range          ← sim_center + sign × norm × sim_half
+        │
+   action = leader_pos - default_joint_pos   ← offset correction
+        │
+  Isaac Lab env.step(action)
+        │
+  sim_joint_pos ≈ leader_pos   (Diff ≈ 0.000)
+```
+
+### Key insight — why `action ≠ leader_pos`
+The SO-100 lift task uses `use_default_offset=True` in `JointPositionActionCfg`.
+Isaac Lab internally computes:
+```
+sim_pos = default_joint_pos + action
+```
+So sending `action = leader_pos` gives `sim_pos = default + leader` — wrong.
+Fix: `action = leader_pos - default_joint_pos` ⇒ `sim_pos = leader_pos` exactly.
+
+---
+
+## STEP 20: HARDWARE SETUP
+
+### Requirements
+- SO-100 leader arm connected via USB
+- `pyserial` installed: `pip install pyserial`
+- Port: `/dev/ttyACM0` (default) — check with `ls /dev/ttyACM*`
+
+### Check port & permissions
+```bash
+ls -la /dev/ttyACM*
+sudo chmod 666 /dev/ttyACM0   # if permission denied
+```
+
+### If USB disconnects mid-session
+```bash
+fuser /dev/ttyACM0     # shows which process holds the port
+fuser -k /dev/ttyACM0  # kills stale process
+```
+
+### Run command
+```bash
+cd ~/IsaacLab && ./isaaclab.sh -p scripts/environments/teleoperation/teleop_so100_leader.py \
+    --task Isaac-Lift-Cube-SO100-v0 --port /dev/ttyACM0
+```
+
+### Shell alias (run from anywhere)
+Add to `~/.bash_aliases`:
+```bash
+alias teleop_so100='cd ~/IsaacLab && ./isaaclab.sh -p scripts/environments/teleoperation/teleop_so100_leader.py --task Isaac-Lift-Cube-SO100-v0'
+```
+Activate: `source ~/.bashrc`
+
+---
+
+## STEP 21: CALIBRATION SYSTEM
+
+### Phase 1 — Full arm range (8 seconds, automatic)
+At startup, after physics warmup:
+```
+CALIBRATION — Move ALL joints through their FULL range
+You have 8 seconds. Move each joint fully in both directions.
+  6.2s left | observed range (counts): [823, 756, 901, 612, 788, 445]
+```
+For each joint, the script records the min and max raw encoder values seen.
+These determine `raw_center` and `raw_half` for the linear mapping.
+
+**Guard:** If a joint barely moved (<50 counts), a default ±1024-count range is used and a warning is printed.
+
+### Phase 2 — Gripper (saved values, no prompt)
+Gripper calibration is saved in code:
+```python
+GRIPPER_RAW_CLOSED = 2027   # raw when jaw fully closed
+GRIPPER_RAW_OPEN   = 3172   # raw when jaw fully open
+```
+To re-calibrate: set both to `None` — interactive prompts will appear.
+
+The sign direction is auto-detected:
+- `raw_open > raw_closed` → `JOINT_SIGNS[5] = +1`
+- `raw_open < raw_closed` → `JOINT_SIGNS[5] = -1`
+
+### Position mapping formula
+```
+normalized = clip((raw - raw_center) / raw_half, -1, +1)
+sim_pos    = sim_center + JOINT_SIGNS[i] × normalized × sim_half
+action     = sim_pos - default_joint_pos
+```
+
+---
+
+## STEP 22: POSITION MAPPING & OFFSET CORRECTION
+
+### Sim joint limits are read from the environment
+```python
+joint_limits  = env.unwrapped.scene["robot"].data.joint_limits[0, :NUM_JOINTS, :]
+sim_joint_min = joint_limits[:, 0].cpu().numpy()
+sim_joint_max = joint_limits[:, 1].cpu().numpy()
+leader.set_sim_limits(sim_joint_min, sim_joint_max)
+```
+This ensures the leader arm's full physical range maps **exactly** to the sim's full joint range — no hardcoded constants.
+
+### Action offset correction
+```python
+default_joint_pos = env.unwrapped.scene["robot"].data.default_joint_pos[0, :NUM_JOINTS]
+action = leader_joints - default_joint_pos
+```
+
+---
+
+## STEP 23: RESPONSE TIME TUNING
+
+All timing constants are in the configuration block at the top of `teleop_so100_leader.py`:
+
+```python
+# Minimum encoder count change required to pass through to sim
+# Lower = faster, Higher = smoother
+DEADBAND_COUNTS = [4, 4, 4, 4, 4, 1]  # index 5 = gripper = near-instant
+
+# Max wait time per servo serial response
+# Lower = faster loop, but more missed reads
+SERIAL_TIMEOUT = 0.001  # 1ms
+
+# Gap between reading consecutive motors (prevents bus collision)
+INTER_READ_SLEEP = 0.0005  # 0.5ms
+```
+
+**Total per-loop serial overhead:**
+- 6 motors × 1ms timeout + 5 gaps × 0.5ms = ~8.5ms maximum
+
+**If arm still feels laggy:** lower `SERIAL_TIMEOUT` to `0.0005` and `INTER_READ_SLEEP` to `0.0002`.
+**If arm is jittery:** raise `DEADBAND_COUNTS` arm joints from `4` to `6` or `8`.
+
+---
+
+## STEP 24: REAL-TIME TERMINAL DISPLAY
+
+Every 10 simulation steps, the terminal overwrites in-place (no scroll):
+
+```
+  Step    340  |    Raw |   Norm | Leader(rad)  |   Sim(rad) |     Diff
+  ------------------------------------------------------------------
+  Shoulder Pan  |  1986 | -0.061 |     -0.1211  |    -0.1211 |  +0.0000
+  Shoulder Lift |   948 | -1.000 |     +0.0000  |    +0.0000 |  +0.0000
+  Elbow Flex    |  3021 | +0.950 |     -0.0782  |    -0.0782 |  +0.0000
+  Wrist Flex    |  2245 | +0.192 |     -0.2941  |    -0.2941 |  +0.0000
+  Wrist Roll    |  1025 | -0.999 |     -3.1385  |    -3.1385 |  +0.0000
+  Gripper/Jaw   |  2027 | -0.021 |     +0.8774  |    +0.8774 |  +0.0000
+  ------------------------------------------------------------------
+  BACKSPACE = reset  |  Ctrl+C = quit
+```
+
+**Columns:**
+- `Raw` — encoder count from servo (0–4095)
+- `Norm` — normalized position (-1 to +1)
+- `Leader(rad)` — what was sent to the sim as target
+- `Sim(rad)` — actual sim joint position read back
+- `Diff` — error; ideally 0.000 on all joints
+
+---
+
+## STEP 25: SHELL ALIAS SETUP
+
+The alias is stored in `~/.bash_aliases` (sourced by `~/.bashrc`):
+
+```bash
+# Add manually:
+nano ~/.bash_aliases
+# Paste:
+alias teleop_so100='cd ~/IsaacLab && ./isaaclab.sh -p scripts/environments/teleoperation/teleop_so100_leader.py --task Isaac-Lift-Cube-SO100-v0'
+# Save: Ctrl+O → Enter → Ctrl+X
+source ~/.bashrc
+```
+
+Usage:
+```bash
+teleop_so100                      # default port /dev/ttyACM0
+teleop_so100 --port /dev/ttyUSB0  # custom port
+```
 - ✅ Added collision mesh setup in Isaac Sim 5.0
 - 🔲 Speed optimization ongoing (target: match Franka)
 - 🔲 IL data collection pipeline (next priority)

@@ -70,11 +70,14 @@ IL_MJ/
 - **Focal Length**: 14.0 — wide-angle view showing cube from above and gripper jaws
 - **Auto-Enabled**: No command-line flag needed
 
-### 🦾 Leader Arm Teleoperation ⭐ NEW
+### 🦾 Leader Arm Teleoperation ⭐
 - **Physical SO-100**: Mirror real leader arm joints directly into sim
 - **Serial Protocol**: Pure pyserial, Feetech STS raw packets, `/dev/ttyACM0`, 1 Mbaud
 - **6-DOF**: Reads all 6 motor positions (IDs 1–6), maps to sim joint space
 - **No SDK Required**: Works with standard pyserial (no scservo_sdk needed)
+- **Auto-Calibration**: 8-sec range sweep per joint + 2-point gripper calibration → accurate linear mapping
+- **Real-Time Display**: Terminal table showing Raw / Norm / Leader / Sim / Diff columns per joint
+- **Startup sequence**: calibrate joints → calibrate gripper → physics warmup → teleop loop
 
 ### 🎲 Domain Randomization
 - **Lighting**: Intensity randomization (500-2000)
@@ -103,11 +106,11 @@ See [SO100_INTEGRATION_GUIDE.md](SO100_INTEGRATION_GUIDE.md) for:
 
 See [CHANGELOG.md](CHANGELOG.md) for complete update history.
 
-**Latest (2026-02-18)**:
-- ✅ Added physical SO-100 leader arm teleoperation (`teleop_so100_leader.py`)
-- ✅ Moved camera config to USD file (cleaner Python code)
-- ✅ Pure pyserial Feetech STS protocol — no external SDK needed
-- ✅ Confirmed working on `/dev/ttyACM0` (QinHeng CH343 USB chip)
+**v1.2 (2026-02-19)**:
+- ✅ Leader arm teleop fully working end-to-end (`teleop_so100_leader.py`)
+- ✅ Auto-calibration system: 8-sec range sweep + gripper 2-point calibration
+- ✅ Action offset bug fixed (`action = leader_joints - default_joint_pos`)
+- ✅ Speed tuning: 1ms serial timeout, per-joint deadband, gripper near-instant response
 
 ## 🔗 Quick Links
 

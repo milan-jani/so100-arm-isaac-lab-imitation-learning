@@ -13,7 +13,7 @@ JOINT MAPPINGS (Change in advance() method, ~Line 95-180):
 delta[0] = Shoulder Pan   → Keys: Q (left) / A (right)
 delta[1] = Shoulder Lift  → Keys: W (up) / S (down)
 delta[2] = Elbow Flex     → Keys: E (extend) / D (retract)
-delta[3] = Wrist Flex     → Keys: R (up) / V (down)
+delta[3] = Wrist Flex     → Keys: C (up) / V (down)
 delta[4] = Wrist Roll     → Keys: T (rotate+) / G (rotate-)
 delta[5] = Gripper        → Keys: Z (open) / X (close)
 
@@ -135,6 +135,18 @@ class JointKeyboardController:
         # Check if event has input attribute (safety check)
         if not hasattr(event, 'input') or not hasattr(event.input, 'name'):
             return True
+        
+        # Define all joint control keys that should be blocked from Isaac Lab's camera/environment controls
+        joint_control_keys = {"Q", "A", "W", "S", "E", "D", "C", "V", "T", "G", "Z", "X"}
+        
+        # Block joint control keys from propagating to camera/environment controls
+        if event.input.name in joint_control_keys:
+            # Update our key state
+            if event.type == carb.input.KeyboardEventType.KEY_PRESS:
+                self._key_state[event.input.name] = True
+            elif event.type == carb.input.KeyboardEventType.KEY_RELEASE:
+                self._key_state[event.input.name] = False
+            return False  # Block propagation to prevent camera/environment shortcuts
             
         # Block F key to prevent camera reset
         if event.input.name == "F":
@@ -144,6 +156,7 @@ class JointKeyboardController:
         if event.input.name == "SPACE":
             return False  # Don't propagate SPACE key (prevents pause/play toggle)
             
+        # For other keys, track state but allow propagation
         if event.type == carb.input.KeyboardEventType.KEY_PRESS:
             self._key_state[event.input.name] = True
         elif event.type == carb.input.KeyboardEventType.KEY_RELEASE:
@@ -169,7 +182,7 @@ class JointKeyboardController:
             Q/A = Shoulder Pan (delta[0])
             W/S = Shoulder Lift (delta[1])
             E/D = Elbow Flex (delta[2])
-            R/V = Wrist Flex (delta[3])
+            C/V = Wrist Flex (delta[3])
             T/G = Wrist Roll (delta[4])
             Z/X = Gripper (delta[5])
         
