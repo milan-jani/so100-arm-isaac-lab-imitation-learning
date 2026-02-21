@@ -1,7 +1,3 @@
-# ============================================================================
-# PATH: isaaclab/source/isaaclab_assets/isaaclab_assets/robots/so100.py
-# ============================================================================
-
 # Copyright (c) 2022-2025, The Isaac Lab Project Developers.
 # All rights reserved.
 #
@@ -69,7 +65,7 @@ SO100_CFG = ArticulationCfg(
         "gripper": ImplicitActuatorCfg(
             joint_names_expr=["gripper"],
             effort_limit_sim=200.0,  # Same as Franka
-            velocity_limit_sim=0.2,
+            velocity_limit_sim=7.5,  # Fast open/close (was 0.2 Franka default — too slow for SO100 jaw)
             stiffness=2e3,    # Same as Franka
             damping=1e2,      # Same as Franka
         ),

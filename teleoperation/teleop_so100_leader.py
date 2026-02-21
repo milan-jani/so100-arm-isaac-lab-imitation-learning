@@ -119,6 +119,15 @@ RAW_MAX         = 4095
 # Per-joint sign correction: flip -1 for any joint that moves wrong way in sim
 JOINT_SIGNS = [1, 1, 1, 1, 1, 1]
 
+# ---------------------------------------------------------------------------
+# WRIST ROLL HARDCODED CALIBRATION — from your confirmed good sweep
+#   raw_center=2046, raw_half=2046 captured when both directions worked.
+#   Set to None to let calibrate_range() compute it from sweep instead.
+# ---------------------------------------------------------------------------
+WRIST_ROLL_RAW_CENTER = 2046
+WRIST_ROLL_RAW_HALF   = 2046
+WRIST_ROLL_JOINT_IDX  = 4
+
 # Gripper is joint index 5 — needs dedicated 2-point calibration
 GRIPPER_JOINT_IDX = 5
 
@@ -295,7 +304,10 @@ class SO100LeaderController:
         """
         print("\n" + "=" * 60)
         print("CALIBRATION — Move ALL joints through their FULL range")
-        print(f"You have {seconds} seconds. Move each joint fully in both directions.")
+        print(f"You have {seconds} seconds.")
+        print("  • Move EACH joint fully to BOTH ends (left AND right / up AND down)")
+        print("  • Especially WRIST ROLL — sweep both directions from center")
+        print("  • Gripper: calibrated separately after this step")
         print("=" * 60)
 
         # Prime the serial bus: flush stale data and warm up all servos
@@ -330,7 +342,15 @@ class SO100LeaderController:
 
         self._raw_center = ((raw_hi + raw_lo) / 2.0).astype(np.float32)
         self._raw_half   = ((raw_hi - raw_lo) / 2.0).astype(np.float32)
+
+        print("  [Calibration] Center = midpoint of swept range per joint.")
         self._accepted_raw[:] = self._read_raw_positions()
+
+        # Wrist roll hardcoded override — ignore sweep result, use known-good values
+        if WRIST_ROLL_RAW_CENTER is not None and WRIST_ROLL_RAW_HALF is not None:
+            self._raw_center[WRIST_ROLL_JOINT_IDX] = float(WRIST_ROLL_RAW_CENTER)
+            self._raw_half[WRIST_ROLL_JOINT_IDX]   = float(WRIST_ROLL_RAW_HALF)
+            print(f"  [WristRoll] Hardcoded: center={WRIST_ROLL_RAW_CENTER}, half={WRIST_ROLL_RAW_HALF}")
 
         print("[LeaderArm] Calibration complete!")
         print(f"  raw_center : {self._raw_center.astype(int)}")
@@ -555,6 +575,11 @@ def main():
     joint_limits = env.unwrapped.scene["robot"].data.joint_limits[0, :NUM_JOINTS, :]
     sim_joint_min = joint_limits[:, 0].cpu().numpy()
     sim_joint_max = joint_limits[:, 1].cpu().numpy()
+    joint_names = ["ShoulderPan", "ShoulderLft", "ElbowFlex  ", "WristFlex  ", "WristRoll  ", "Gripper    "]
+    print("\n[Info] Sim joint limits (from USD):")
+    for i, name in enumerate(joint_names):
+        print(f"  {name}: [{sim_joint_min[i]:.3f}, {sim_joint_max[i]:.3f}]  range={sim_joint_max[i]-sim_joint_min[i]:.3f} rad")
+    print()
     leader.set_sim_limits(sim_joint_min, sim_joint_max)
 
     # Auto-calibrate: user moves arm through full physical range

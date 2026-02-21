@@ -1974,6 +1974,11 @@ print(isaaclab_assets.__file__)  # Shows actual import path
 - ✅ Updated gripper opening range (0.08 max)
 - ✅ Fixed file structure confusion (2 so100.py files issue)
 
+**v1.3 - February 21, 2026 (Milan Jani)**
+- ✅ Gripper jaw delay fixed: `velocity_limit_sim` raised from `0.2` → `7.5` in `so100.py`
+- ✅ Wrist roll hardcoded calibration: `WRIST_ROLL_RAW_CENTER=2046`, `WRIST_ROLL_RAW_HALF=2046` — no longer depends on 8-sec sweep
+- ✅ Sim joint limits printed at startup for easy debugging
+
 **v1.2 - February 19, 2026 (Milan Jani)**
 - ✅ Added `teleop_so100_leader.py` — physical leader arm mirrors simulation
 - ✅ Raw pyserial protocol (no scservo_sdk dependency)

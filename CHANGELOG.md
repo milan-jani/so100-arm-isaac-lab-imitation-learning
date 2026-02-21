@@ -1,5 +1,17 @@
 # Changelog - SO-100 IsaacLab Integration
 
+## [v1.3] - 2026-02-21
+
+### Fixed
+- **Gripper jaw delay** — `velocity_limit_sim` raised from `0.2` → `7.5` in `so100.py`; physics engine was capping jaw speed at Franka's linear finger rate
+- **Wrist Roll one-direction block** — hardcoded `WRIST_ROLL_RAW_CENTER=2046`, `WRIST_ROLL_RAW_HALF=2046` from confirmed good sweep; 8-sec calibration no longer overwrites wrist_roll values
+
+### Files Updated
+- `isaaclab_assets/robots/so100.py` — gripper velocity limit fix
+- `teleoperation/teleop_so100_leader.py` — wrist roll hardcoded calibration, sim joint limits printed at startup
+
+---
+
 ## [v1.2] - 2026-02-19
 
 ### Added
